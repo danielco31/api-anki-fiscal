@@ -112,18 +112,7 @@ def perguntar():
         """
         
         resposta = model.generate_content(prompt_final)
-        
-        # 4. AQUI É A MÁGICA: O Python adiciona as fontes na marra!
-        lista_formatada = "<br>".join([f"• {f}" for f in fontes_encontradas])
-        
-        if not fontes_encontradas:
-            rodape_fontes = "\n\n<small><i>(Nenhuma fonte específica encontrada nos PDFs)</i></small>"
-        else:
-            rodape_fontes = f"\n\n<hr><b>📚 Fontes Consultadas:</b><br><small>{lista_formatada}</small>"
-            
-        resposta_final = resposta.text + rodape_fontes
-        
-        return jsonify({"text": resposta_final})
+        return jsonify({"text": resposta.text})
 
     except Exception as e:
         return jsonify({"text": f"Erro interno: {str(e)}"}), 500
