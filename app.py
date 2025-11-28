@@ -62,18 +62,21 @@ def perguntar():
         
         prompt_final = f"""
         Você é um tutor especialista em concursos fiscais.
-        Responda à pergunta abaixo usando OBRIGATORIAMENTE o contexto fornecido.
         
+        INSTRUÇÃO DE QUALIDADE: O contexto abaixo foi extraído de PDFs e pode conter erros de formatação (palavrasjuntas ou sem espaço). 
+        Sua tarefa é INTERPRETAR o conteúdo e corrigir esses erros de português ao formular sua resposta. Não copie os erros.
+
         CONTEXTO (Meus Livros/PDFs):
         {contexto}
         
         PERGUNTA:
         {pergunta}
         
-        INSTRUÇÕES:
-        - Responda de forma direta e didática.
-        - Se a resposta estiver no contexto, explique e cite o conceito.
-        - No final, liste as fontes: {list(fontes)}
+        DIRETRIZES DE RESPOSTA:
+        1. Responda de forma direta, didática e com português correto.
+        2. Se a resposta estiver no contexto, explique o conceito usando suas próprias palavras (corrigindo a formatação).
+        3. Se citar trechos literais, corrija os espaçamentos.
+        4. No final, liste as fontes: {list(fontes)}
         """
         
         resposta = model.generate_content(prompt_final)
