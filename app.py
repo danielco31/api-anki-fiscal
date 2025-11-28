@@ -101,6 +101,10 @@ def perguntar():
         
         QUESTÃO/CARD DO ALUNO:
         {pergunta}
+
+        ⚠️ REGRA DE OURO (FORMATAÇÃO):
+        - NÃO escreva "Fontes:" ou liste os arquivos no final da sua resposta. 
+        - O sistema já fará essa listagem automaticamente.
         """
         
         resposta = model.generate_content(prompt_final)
