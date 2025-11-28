@@ -1,4 +1,5 @@
 import os
+import base64
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
@@ -16,14 +17,13 @@ index = pc.Index("anki-estudos")
 
 @app.route('/', methods=['GET'])
 def home():
-    return "Servidor Universal (Vision + RAG) Online 🟢"
+    return "Servidor Gemini 2.0 Flash Online ⚡👁️"
 
 @app.route('/perguntar', methods=['POST'])
 def perguntar():
     try:
         dados = request.json
         pergunta = dados.get('prompt', '')
-        # AQUI A MUDANÇA: Captura as imagens enviadas pelo Anki
         imagens = dados.get('images', []) 
         
         if not pergunta and not imagens:
@@ -34,6 +34,7 @@ def perguntar():
         fontes = set()
 
         if pergunta.strip():
+            # O modelo de embedding continua sendo o text-embedding-004 (padrão atual)
             emb_pergunta = genai.embed_content(
                 model="models/text-embedding-004",
                 content=pergunta,
@@ -52,8 +53,8 @@ def perguntar():
             if trechos:
                 contexto = "\n---\n".join(trechos)
 
-        # 2. Configura o Modelo (1.5 Flash é ótimo para visão e texto)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # 2. Configura o Modelo (ATUALIZADO PARA 2.0)
+        model = genai.GenerativeModel('gemini-2.0-flash')
         
         prompt_final = f"""
         ATUE COMO: Um Tutor de Elite Multidisciplinar (Auditor Fiscal e Especialista em Saúde).
@@ -102,12 +103,16 @@ def perguntar():
         - O sistema já fará essa listagem automaticamente.
         """
         
-        # 3. Monta o "Pacote Misto" (Texto + Imagens) para o Gemini
+        # 3. Monta o "Pacote Misto" (Texto + Imagens)
         conteudo_envio = [prompt_final]
         
         for img_b64 in imagens:
-            # Adiciona cada imagem como um objeto Blob
-            conteudo_envio.append({'mime_type': 'image/jpeg', 'data': img_b64})
+            try:
+                # Decodifica a imagem para bytes
+                img_bytes = base64.b64decode(img_b64)
+                conteudo_envio.append({'mime_type': 'image/jpeg', 'data': img_bytes})
+            except Exception as e:
+                print(f"Erro imagem: {e}")
             
         resposta = model.generate_content(conteudo_envio)
 
