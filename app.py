@@ -57,7 +57,7 @@ def perguntar():
             contexto = "Não encontrei informações exatas nos PDFs fornecidos."
 
         # 4. Manda pro Gemini responder
-        model = genai.GenerativeModel('gemini-1.5-flash') # 1.5 Flash é mais estável no Render
+        model = genai.GenerativeModel('gemini-2.0-flash') # 1.5 Flash é mais estável no Render
         
         prompt_final = f"""
         ATUE COMO: Um Tutor de Elite Multidisciplinar (Auditor Fiscal e Especialista em Saúde).
