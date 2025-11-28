@@ -14,7 +14,6 @@ PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
 # Configurações
 genai.configure(api_key=GOOGLE_API_KEY)
 pc = Pinecone(api_key=PINECONE_API_KEY)
-# O nome tem que ser igual ao que você usou no indexador
 index = pc.Index("anki-estudos") 
 
 @app.route('/', methods=['GET'])
@@ -37,7 +36,7 @@ def perguntar():
             task_type="retrieval_query"
         )['embedding']
         
-        # 2. Busca no Pinecone os 5 trechos mais parecidos nos seus PDFs
+        # 2. Busca no Pinecone os 5 trechos mais parecidos
         busca = index.query(
             vector=emb_pergunta,
             top_k=5,
@@ -50,15 +49,15 @@ def perguntar():
         for match in busca['matches']:
             if 'text' in match['metadata']:
                 contexto += match['metadata']['text'] + "\n---\n"
-                # Aqui ele pega o nome original do arquivo (com acento) para te mostrar
-                fontes.add(match['metadata']['source'])
+                # Pega o nome da fonte. Se não tiver, usa "Desconhecido"
+                fonte = match['metadata'].get('source', 'Fonte Desconhecida')
+                fontes.add(fonte)
         
         if not contexto:
             contexto = "Não encontrei informações exatas nos PDFs fornecidos."
 
         # 4. Manda pro Gemini responder
-        # Usamos o Flash 2.0 ou 1.5 que é rápido e grátis
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash') # 1.5 Flash é mais estável no Render
         
         prompt_final = f"""
         ATUE COMO: Um Tutor de Elite Multidisciplinar (Auditor Fiscal e Especialista em Saúde).
@@ -93,13 +92,8 @@ def perguntar():
         
         --- AVISOS DE QUALIDADE ---
         1. CORREÇÃO DE PORTUGUÊS: O contexto pode ter palavras aglutinadas ("palavrajunta"). Corrija o português ao explicar.
-        
-        2. FORMATAÇÃO (IMPORTANTE): 
-           - NÃO use LaTeX/Matemática para escrever Leis, Artigos ou Listas de Texto. Isso quebra a tela do celular.
-           - Para listar incisos ou tópicos, use apenas Markdown padrão (hífens "-" ou números "1.").
-           
-        3. EXCEÇÃO: Use LaTeX apenas para Fórmulas Matemáticas reais e Cálculos Financeiros/Contábeis.
-        
+        2. FORMATAÇÃO (IMPORTANTE): NÃO use LaTeX/Matemática para escrever Leis ou Listas de Texto. Use apenas Markdown padrão.
+        3. EXCEÇÃO: Use LaTeX apenas para Fórmulas Matemáticas reais e Cálculos.
         4. FONTE: Baseie-se no contexto recuperado abaixo.
 
         CONTEXTO RECUPERADO (Base de Conhecimento):
@@ -107,12 +101,24 @@ def perguntar():
         
         QUESTÃO/CARD DO ALUNO:
         {pergunta}
-        
-        LISTA DE FONTES: {list(fontes)}
         """
         
         resposta = model.generate_content(prompt_final)
-        return jsonify({"text": resposta.text})
+
+        # =================================================================
+        # 5. A MÁGICA: O Python força a lista de fontes no final
+        # =================================================================
+        if not fontes:
+            rodape_fontes = "\n\n<br><small><i>(Nenhuma fonte específica encontrada nos PDFs)</i></small>"
+        else:
+            # Cria a lista com bolinhas
+            lista_formatada = "<br>".join([f"• {f}" for f in fontes])
+            rodape_fontes = f"\n\n<hr><b>📚 Fontes Consultadas:</b><br><small>{lista_formatada}</small>"
+            
+        # Cola o rodapé no texto da IA
+        texto_final = resposta.text + rodape_fontes
+        
+        return jsonify({"text": texto_final})
 
     except Exception as e:
         return jsonify({"text": f"Erro interno: {str(e)}"}), 500
