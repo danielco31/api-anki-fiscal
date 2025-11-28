@@ -92,8 +92,15 @@ def perguntar():
         - 💡 EXEMPLO PRÁTICO: Dê um caso de uso real (ex: "Um banco usa esse comando SQL para evitar que...").
         
         --- AVISOS DE QUALIDADE ---
-        1. CORREÇÃO: O contexto pode ter palavras aglutinadas ("palavrajunta"). Corrija o português ao explicar.
-        2. FONTE: Baseie-se no contexto recuperado abaixo.
+        1. CORREÇÃO DE PORTUGUÊS: O contexto pode ter palavras aglutinadas ("palavrajunta"). Corrija o português ao explicar.
+        
+        2. FORMATAÇÃO (IMPORTANTE): 
+           - NÃO use LaTeX/Matemática para escrever Leis, Artigos ou Listas de Texto. Isso quebra a tela do celular.
+           - Para listar incisos ou tópicos, use apenas Markdown padrão (hífens "-" ou números "1.").
+           
+        3. EXCEÇÃO: Use LaTeX apenas para Fórmulas Matemáticas reais e Cálculos Financeiros/Contábeis.
+        
+        4. FONTE: Baseie-se no contexto recuperado abaixo.
 
         CONTEXTO RECUPERADO (Base de Conhecimento):
         {contexto}
