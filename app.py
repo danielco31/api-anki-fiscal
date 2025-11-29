@@ -67,45 +67,44 @@ def perguntar():
                     fontes.add(fonte)
             if trechos: contexto = "\n---\n".join(trechos)
 
-        # ETAPA 3: AULA FINAL (ESTRUTURA PEDAGÓGICA)
+        # ... (início do código igual) ...
+
+        # ETAPA 3: AULA FINAL (COM OBEDIÊNCIA TOTAL AO GABARITO)
         prompt_final = f"""
-        ATUE COMO: Tutor de Elite (Fiscal e Saúde).
-        CONTEXTO: Estudo Reverso (Teoria a partir da Questão).
+        ATUE COMO: Tutor de Elite Multidisciplinar.
+        CONTEXTO: Estudo Reverso.
         
-        DADOS DO CARD:
-        {pergunta_usuario}
-        {descricao_visual}
+        --- DADOS DO CARD (TEXTO + IMAGEM OCR) ---
+        PERGUNTA DIGITADA: {pergunta_usuario}
+        {dados_visuais}
         
-        CONTEXTO DOS LIVROS:
+        --- CONTEXTO DOS LIVROS ---
         {contexto}
         
-        ⚠️ PRIORIDADE DE GABARITO:
-        1. Ache a resposta correta nos dados do card.
-        2. Assuma que ela é a Verdade Absoluta.
+        ⚠️ LEI MARCIAL DO GABARITO (LEIA COM ATENÇÃO):
+        1. O card contém a RESPOSTA/GABARITO (seja no texto digitado ou no texto extraído da imagem).
+        2. PROCURE por termos como: "Gabarito", "Resposta", "Comentários", "Letra X", "Correto/Errado".
+        3. O gabarito fornecido no card é a VERDADE ABSOLUTA. Mesmo que você (IA) discorde, SIGA O GABARITO DO CARD.
+        4. Se o card diz que a "II está errada", sua missão é explicar POR QUE ela está errada (busque a exceção ou a regra específica nos livros), e não tentar dizer que está certa.
         
-        SUA MISSÃO (SIGA ESTA ORDEM):
-        
-        1. 🎓 **MINI-AULA TEÓRICA:**
-           - Antes de responder à questão, explique a TEORIA, o CONCEITO e a LEI por trás do assunto.
-           - Ensine como se o aluno não soubesse nada sobre o tema.
-        
-        2. ✅ **RESOLUÇÃO DA QUESTÃO:**
-           - Aplique a teoria explicada acima para justificar o gabarito.
-           - Se for Múltipla Escolha, explique brevemente o erro das outras.
-        
-        3. 💡 **EXEMPLO PRÁTICO:**
-           - Crie um caso concreto, clínico ou contábil para ilustrar.
+        SUA MISSÃO:
+        - Identifique o gabarito no texto acima.
+        - Ministre uma MINI-AULA justificando ESSE gabarito.
+        - No caso de Múltipla Escolha, explique o erro das alternativas que o gabarito diz estarem erradas.
+        - OBRIGATÓRIO: Crie um EXEMPLO PRÁTICO.
         
         --- PERFIS ---
-        [DIREITO/SUS] Cite a Lei.
-        [SAÚDE] Explique o mecanismo.
-        [EXATAS] Mostre o cálculo.
+        [JURÍDICA/SUS] Cite a Lei/Norma.
+        [SAÚDE] Explique mecanismo.
+        [EXATAS] Mostre cálculo.
         
         --- AVISOS ---
-        - Corrija português.
-        - NÃO use LaTeX para texto.
-        - NÃO liste fontes no final.
+        1. Corrija português.
+        2. NÃO use LaTeX para texto.
+        3. ⛔ NÃO liste fontes no final.
         """
+        
+        # ... (resto do código igual)
         
         resposta = model_vision.generate_content(prompt_final)
 
