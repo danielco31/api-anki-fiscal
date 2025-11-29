@@ -15,11 +15,11 @@ genai.configure(api_key=GOOGLE_API_KEY)
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index("anki-estudos") 
 
-model = genai.GenerativeModel('gemini-2.0-flash') 
+model_vision = genai.GenerativeModel('gemini-2.0-flash') 
 
 @app.route('/', methods=['GET'])
 def home():
-    return "Servidor Híbrido (Texto & Visão) Online 🟢"
+    return "Servidor RAG Adaptativo (Certo/Errado + Multipla) Online 🟢"
 
 @app.route('/perguntar', methods=['POST'])
 def perguntar():
@@ -32,44 +32,48 @@ def perguntar():
             return jsonify({"text": "Erro: Card vazio."}), 400
 
         # ====================================================================
-        # ETAPA 1: PROCESSAMENTO INTELIGENTE (COM OU SEM IMAGEM)
+        # ETAPA 1: VISÃO INTELIGENTE (OCR FLEXÍVEL)
         # ====================================================================
         texto_para_busca = pergunta_usuario
-        dados_visuais = "(Este card é puramente textual, sem imagens)."
+        descricao_visual = ""
 
-        # SE TIVER IMAGEM: Faz OCR para enriquecer a busca
         if imagens:
             try:
                 img_bytes = base64.b64decode(imagens[0])
                 
+                # Prompt que sabe lidar com QUALQUER formato
                 prompt_ocr = """
-                ATENÇÃO: Extraia TODO o texto desta imagem.
-                1. Se for questão, copie enunciado e alternativas.
-                2. Se tiver gabarito marcado, indique.
-                3. Se for gráfico/diagrama, descreva.
+                Analise esta imagem de estudo para concurso.
+                
+                SUA TAREFA DE EXTRAÇÃO:
+                1. Transcreva TODO o texto visível (Enunciado + Itens).
+                2. IDENTIFIQUE O TIPO: É Múltipla Escolha (A,B,C...)? É Certo/Errado (CEBRASPE)?
+                3. PROCURE O GABARITO VISUAL: Procure por marcações, texto em verde, "Gabarito: X" ou comentários.
+                
+                Saída esperada:
+                [TIPO DA QUESTÃO]: (Ex: Múltipla Escolha ou Certo/Errado)
+                [TEXTO TRANSCRITO]: ...
+                [GABARITO IDENTIFICADO NA IMAGEM]: (Se houver)
                 """
-                resp_ocr = model.generate_content([
+                
+                resp_ocr = model_vision.generate_content([
                     prompt_ocr,
                     {'mime_type': 'image/jpeg', 'data': img_bytes}
                 ])
                 
                 texto_transcrito = resp_ocr.text
-                dados_visuais = f"\n[CONTEÚDO DA IMAGEM]:\n{texto_transcrito}"
-                
-                # A busca no Pinecone será: O que o usuário digitou + O que está na imagem
+                descricao_visual = f"\n\n=== DADOS DA IMAGEM ===\n{texto_transcrito}"
                 texto_para_busca += " " + texto_transcrito
-                
             except Exception as e:
-                print(f"Erro no OCR (Ignorando imagem): {e}")
+                print(f"Erro OCR: {e}")
 
         # ====================================================================
-        # ETAPA 2: BUSCA NO PINECONE (MEMÓRIA)
+        # ETAPA 2: BUSCA NO PINECONE
         # ====================================================================
         contexto = "Sem referência nos PDFs."
         fontes = set()
 
         if texto_para_busca.strip():
-            # Corta texto muito longo para não travar o embedding
             emb = genai.embed_content(
                 model="models/text-embedding-004",
                 content=texto_para_busca[:9000], 
@@ -89,39 +93,47 @@ def perguntar():
                 contexto = "\n---\n".join(trechos)
 
         # ====================================================================
-        # ETAPA 3: AULA FINAL (PROMPT ADAPTATIVO)
+        # ETAPA 3: AULA ADAPTATIVA (O Segredo está aqui)
         # ====================================================================
         prompt_final = f"""
-        ATUE COMO: Tutor de Elite Multidisciplinar (Auditor Fiscal e Especialista em Saúde).
+        ATUE COMO: Tutor de Elite Multidisciplinar.
         CONTEXTO: Estudo Reverso.
         
-        --- DADOS DO CARD ---
-        TEXTO DIGITADO: {pergunta_usuario}
-        {dados_visuais}
+        DADOS DO CARD (Frente + Verso + Imagem):
+        {pergunta_usuario}
+        {descricao_visual}
         
-        --- CONTEXTO DOS LIVROS (PINECONE) ---
+        CONTEXTO DOS LIVROS:
         {contexto}
         
-        ⚠️ LÓGICA DE GABARITO:
-        1. Procure a resposta correta nos dados do card (Texto ou Imagem).
-        2. Assuma que o gabarito fornecido está CERTO.
-        3. Se não houver gabarito explícito, resolva a questão com base nos livros.
+        ⚠️ LÓGICA DE GABARITO (PRIORIDADE MÁXIMA):
+        1. O usuário forneceu a resposta (no verso ou na imagem). ACHE ELA.
+        2. Assuma que essa resposta está CERTA.
+        3. Sua tarefa é JUSTIFICAR essa resposta com a teoria.
         
-        SUA MISSÃO:
-        - Ministre uma MINI-AULA teórica sobre o tema.
-        - Se for questão, justifique o gabarito.
-        - Se for conceito, explique profundamente.
-        - OBRIGATÓRIO: Crie um EXEMPLO PRÁTICO.
+        SUA MISSÃO (Adapte-se ao formato encontrado):
         
-        --- DIRETRIZES ---
-        [DIREITO/SUS] Cite a Lei/Norma.
-        [SAÚDE] Explique mecanismo/fisiopatologia.
-        [EXATAS/TI] Mostre cálculo/lógica.
+        CASO A (CERTO / ERRADO):
+        - Diga: "O item está [Certo/Errado] porque..."
+        - Explique a pegadinha (se houver) ou confirme a teoria.
         
-        AVISO: Corrija português e NÃO liste fontes no final.
+        CASO B (MÚLTIPLA ESCOLHA):
+        - Diga: "A alternativa correta é a [Letra]..."
+        - Explique o porquê da correta.
+        - Brevemente, aponte o erro das outras (ex: "A letra A erra ao dizer...").
+        
+        CASO C (PERGUNTA ABERTA / CONCEITO):
+        - Apenas explique o conceito de forma direta.
+        
+        OBRIGATÓRIO: Crie um EXEMPLO PRÁTICO no final.
+        
+        --- AVISOS ---
+        1. Corrija português (palavras aglutinadas).
+        2. NÃO use LaTeX para texto de lei.
+        3. NÃO liste fontes no final.
         """
         
-        resposta = model.generate_content(prompt_final)
+        resposta = model_vision.generate_content(prompt_final)
 
         # ====================================================================
         # ETAPA 4: RODAPÉ DE FONTES (PYTHON)
