@@ -15,12 +15,11 @@ genai.configure(api_key=GOOGLE_API_KEY)
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index("anki-estudos") 
 
-# Modelo para OCR e Resposta
-model_vision = genai.GenerativeModel('gemini-2.0-flash') 
+model = genai.GenerativeModel('gemini-2.0-flash') 
 
 @app.route('/', methods=['GET'])
 def home():
-    return "Servidor RAG (Gabarito Fixo) Online 🟢"
+    return "Servidor Híbrido (Texto & Visão) Online 🟢"
 
 @app.route('/perguntar', methods=['POST'])
 def perguntar():
@@ -33,33 +32,44 @@ def perguntar():
             return jsonify({"text": "Erro: Card vazio."}), 400
 
         # ====================================================================
-        # ETAPA 1: VISÃO (OCR) - Extrai texto da imagem para achar o Gabarito
+        # ETAPA 1: PROCESSAMENTO INTELIGENTE (COM OU SEM IMAGEM)
         # ====================================================================
         texto_para_busca = pergunta_usuario
-        descricao_visual = ""
+        dados_visuais = "(Este card é puramente textual, sem imagens)."
 
+        # SE TIVER IMAGEM: Faz OCR para enriquecer a busca
         if imagens:
-            img_bytes = base64.b64decode(imagens[0])
-            
-            # Pede para a IA ler TUDO (incluindo o gabarito se estiver na imagem)
-            prompt_ocr = "Transcreva TODO o texto desta imagem. Se houver gabarito ou resposta marcada, transcreva também."
-            
-            resp_ocr = model_vision.generate_content([
-                prompt_ocr,
-                {'mime_type': 'image/jpeg', 'data': img_bytes}
-            ])
-            
-            texto_transcrito = resp_ocr.text
-            descricao_visual = f"\n\n[CONTEÚDO DA IMAGEM]:\n{texto_transcrito}"
-            texto_para_busca += " " + texto_transcrito
+            try:
+                img_bytes = base64.b64decode(imagens[0])
+                
+                prompt_ocr = """
+                ATENÇÃO: Extraia TODO o texto desta imagem.
+                1. Se for questão, copie enunciado e alternativas.
+                2. Se tiver gabarito marcado, indique.
+                3. Se for gráfico/diagrama, descreva.
+                """
+                resp_ocr = model.generate_content([
+                    prompt_ocr,
+                    {'mime_type': 'image/jpeg', 'data': img_bytes}
+                ])
+                
+                texto_transcrito = resp_ocr.text
+                dados_visuais = f"\n[CONTEÚDO DA IMAGEM]:\n{texto_transcrito}"
+                
+                # A busca no Pinecone será: O que o usuário digitou + O que está na imagem
+                texto_para_busca += " " + texto_transcrito
+                
+            except Exception as e:
+                print(f"Erro no OCR (Ignorando imagem): {e}")
 
         # ====================================================================
-        # ETAPA 2: BUSCA NO PINECONE
+        # ETAPA 2: BUSCA NO PINECONE (MEMÓRIA)
         # ====================================================================
         contexto = "Sem referência nos PDFs."
         fontes = set()
 
         if texto_para_busca.strip():
+            # Corta texto muito longo para não travar o embedding
             emb = genai.embed_content(
                 model="models/text-embedding-004",
                 content=texto_para_busca[:9000], 
@@ -79,53 +89,39 @@ def perguntar():
                 contexto = "\n---\n".join(trechos)
 
         # ====================================================================
-        # ETAPA 3: AULA COM GABARITO FIXO (GEMINI)
+        # ETAPA 3: AULA FINAL (PROMPT ADAPTATIVO)
         # ====================================================================
         prompt_final = f"""
-        ATUE COMO: Um Tutor de Elite Multidisciplinar (Auditor Fiscal e Especialista em Saúde).
-        CONTEXTO: O usuário faz "Estudo Reverso". Ele envia a PERGUNTA e a RESPOSTA juntas.
+        ATUE COMO: Tutor de Elite Multidisciplinar (Auditor Fiscal e Especialista em Saúde).
+        CONTEXTO: Estudo Reverso.
         
-        DADOS DO CARD (Texto + Imagem Transcrita):
-        {pergunta_usuario}
-        {descricao_visual}
+        --- DADOS DO CARD ---
+        TEXTO DIGITADO: {pergunta_usuario}
+        {dados_visuais}
         
-        CONTEXTO RECUPERADO DOS LIVROS:
+        --- CONTEXTO DOS LIVROS (PINECONE) ---
         {contexto}
         
-        ⚠️ REGRA DE OURO DO GABARITO (CRÍTICO):
-        1. NÃO tente resolver a questão sozinho.
-        2. O Gabarito Correto JÁ ESTÁ nos dados do card acima (Procure por "Gabarito", "Letra", "Certo/Errado" ou texto explicativo).
-        3. Assuma que o gabarito fornecido pelo aluno é a Verdade Absoluta.
-        4. Sua tarefa é EXPLICAR POR QUE aquele gabarito está certo, usando a teoria dos livros.
+        ⚠️ LÓGICA DE GABARITO:
+        1. Procure a resposta correta nos dados do card (Texto ou Imagem).
+        2. Assuma que o gabarito fornecido está CERTO.
+        3. Se não houver gabarito explícito, resolva a questão com base nos livros.
         
         SUA MISSÃO:
-        1. Identifique a matéria e o Perfil.
-        2. Ministre uma MINI-AULA teórica justificando a resposta do aluno.
-        3. OBRIGATÓRIO: Crie um EXEMPLO PRÁTICO.
+        - Ministre uma MINI-AULA teórica sobre o tema.
+        - Se for questão, justifique o gabarito.
+        - Se for conceito, explique profundamente.
+        - OBRIGATÓRIO: Crie um EXEMPLO PRÁTICO.
         
-        --- PERFIS DE RESPOSTA ---
+        --- DIRETRIZES ---
+        [DIREITO/SUS] Cite a Lei/Norma.
+        [SAÚDE] Explique mecanismo/fisiopatologia.
+        [EXATAS/TI] Mostre cálculo/lógica.
         
-        [PERFIL 1: JURÍDICA / SUS / HUMANAS]
-        - Teoria: Explique o conceito e cite a Lei/Norma (8.080, CF/88, LRF).
-        - Exemplo: Crie uma situação hipotética ("Imagine que o servidor João...").
-        
-        [PERFIL 2: SAÚDE / FARMÁCIA]
-        - Teoria: Explique mecanismo de ação, interação ou regra da Anvisa.
-        - Exemplo: Dê um exemplo clínico.
-        
-        [PERFIL 3: EXATAS / CONTABILIDADE]
-        - Ação: Mostre o CÁLCULO ou LANÇAMENTO que chega no resultado do gabarito.
-        
-        [PERFIL 4: TI]
-        - Ação: Explique a lógica do código ou diagrama.
-        
-        --- AVISOS ---
-        1. Corrija português (palavras aglutinadas).
-        2. NÃO use LaTeX para texto.
-        3. NÃO liste as fontes no final (o sistema já faz isso).
+        AVISO: Corrija português e NÃO liste fontes no final.
         """
         
-        resposta = model_vision.generate_content(prompt_final)
+        resposta = model.generate_content(prompt_final)
 
         # ====================================================================
         # ETAPA 4: RODAPÉ DE FONTES (PYTHON)
