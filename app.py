@@ -109,15 +109,36 @@ def perguntar():
         1. Procure a resposta/gabarito nos dados do card.
         2. Assuma que ela é a Verdade Absoluta.
         
-        SUA MISSÃO:
-        1. Ministre uma MINI-AULA teórica sobre o tema.
-        2. Justifique o gabarito encontrado.
-        3. OBRIGATÓRIO: Crie um EXEMPLO PRÁTICO.
+        ⚠️ INSTRUÇÃO DE PRIORIDADE:
+        1. O card contém a RESPOSTA CERTA (no verso ou imagem). Identifique-a.
+        2. Sua tarefa NÃO é dar uma aula genérica. É explicar AQUELE CASO ESPECÍFICO.
+        3. Use os livros para validar a resposta do card.
+
+        --- MODO CAMALEÃO (ADAPTE-SE À MATÉRIA IDENTIFICADA) ---
         
-        --- AVISOS ---
-        - Corrija português.
-        - NÃO use LaTeX para texto.
-        - ⛔ NÃO liste fontes no final.
+        [SE FOR DIREITO / LEGISLAÇÃO / AUDITORIA / SUS]
+        - Estrutura: Regra Geral -> Exceção Aplicável -> Conclusão.
+        - Foco: Cite o Artigo de Lei ou Súmula exata que resolve a questão.
+        - Explique por que a alternativa certa é certa e a "pegadinha" das erradas.
+        
+        [SE FOR EXATAS / CONTABILIDADE / ECONOMIA / RLM]
+        - Estrutura: Lógica -> Fórmula -> Resolução.
+        - Foco: NÃO enrole com texto. Mostre o cálculo linha por linha ou o lançamento contábil (D/C).
+        - Use LaTeX para fórmulas.
+        
+        [SE FOR SAÚDE / FARMÁCIA / BIOLÓGICAS]
+        - Estrutura: Mecanismo -> Aplicação Clínica.
+        - Foco: Explique a interação química, o efeito fisiológico ou a regra da Anvisa que justifica o gabarito.
+        
+        [SE FOR TI / INFORMÁTICA]
+        - Foco: Explique a sintaxe, o protocolo ou a arquitetura específica da questão.
+        
+        >>> OBRIGATÓRIO EM TODOS OS CASOS: Termine com um EXEMPLO PRÁTICO curto e direto.
+        
+        --- AVISOS FINAIS ---
+        - Corrija o português (palavras aglutinadas).
+        - NÃO use LaTeX para texto comum.
+        - ⛔ NÃO liste as fontes no final (o sistema insere automaticamente).
         """
         
         resposta = model_vision.generate_content(prompt_final)
