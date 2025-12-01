@@ -136,6 +136,9 @@ def perguntar():
         >>> OBRIGATÓRIO EM TODOS OS CASOS: Termine com um EXEMPLO PRÁTICO curto e direto.
         
         --- AVISOS FINAIS ---
+        1. ⛔ JAMAIS use LaTeX ($...$) para escrever frases, texto comum ou valores monetários (R$).
+           - ERRADO: $R$ 1.000,00$
+           - CERTO: R$ 1.000,00
         - Corrija o português (palavras aglutinadas).
         - NÃO use LaTeX para texto comum.
         - ⛔ NÃO liste as fontes no final (o sistema insere automaticamente).
